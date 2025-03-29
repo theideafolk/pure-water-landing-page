@@ -10,9 +10,22 @@ const HeroSection: React.FC = () => {
     const video = videoRef.current;
     if (video) {
       // Play video when it's ready
-      video.addEventListener('loadeddata', () => {
-        video.play().catch(err => console.log('Video autoplay failed:', err));
-      });
+      const playVideo = () => {
+        video.play().catch(err => {
+          console.log('Video autoplay failed:', err);
+          
+          // On mobile, especially iOS, we need user interaction before playing
+          // We'll set up the video to be ready to play but not actually play it
+          video.load();
+          video.muted = true;
+          video.playsInline = true;
+          video.setAttribute('playsinline', '');
+          video.setAttribute('webkit-playsinline', '');
+        });
+      };
+      
+      // Use canplaythrough instead of loadeddata for better mobile compatibility
+      video.addEventListener('canplaythrough', playVideo, { once: true });
 
       // Loop the video when it ends
       video.addEventListener('ended', () => {
@@ -24,7 +37,7 @@ const HeroSection: React.FC = () => {
     return () => {
       if (video) {
         video.pause();
-        video.removeEventListener('loadeddata', () => {});
+        video.removeEventListener('canplaythrough', () => {});
         video.removeEventListener('ended', () => {});
       }
     };
@@ -44,8 +57,9 @@ const HeroSection: React.FC = () => {
             className="absolute w-full h-full object-cover md:object-center object-[center_center]"
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             disablePictureInPicture
+            webkit-playsinline="true"
           >
             <source src="/hero-footage.mp4" type="video/mp4" />
             {/* Fallback image in case video fails to load */}
@@ -72,7 +86,8 @@ const HeroSection: React.FC = () => {
         
         <h2 className="text-xl md:text-2xl text-white mb-8 max-w-2xl mx-auto 
                       drop-shadow-lg backdrop-blur-[1px] 
-                      [text-shadow:_0_1px_5px_rgba(17,94,89,0.4)]">
+                      [text-shadow:_0_1px_5px_rgba(17,94,89,0.4)]
+                      font-normal">
           Experience the difference with our advanced water refinement systems
         </h2>
 

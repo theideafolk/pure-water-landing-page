@@ -114,10 +114,25 @@ const WaterIssuesSection: React.FC = () => {
   useEffect(() => {
     const video = videoRef.current;
     if (video) {
-      video.addEventListener('loadeddata', () => {
-        video.play().catch(err => console.log('Video autoplay failed:', err));
-      });
+      // Play video when it's ready
+      const playVideo = () => {
+        video.play().catch(err => {
+          console.log('Video autoplay failed:', err);
+          
+          // On mobile, especially iOS, we need user interaction before playing
+          // We'll set up the video to be ready to play but not actually play it
+          video.load();
+          video.muted = true;
+          video.playsInline = true;
+          video.setAttribute('playsinline', '');
+          video.setAttribute('webkit-playsinline', '');
+        });
+      };
+      
+      // Use canplaythrough instead of loadeddata for better mobile compatibility
+      video.addEventListener('canplaythrough', playVideo, { once: true });
 
+      // Loop the video when it ends
       video.addEventListener('ended', () => {
         video.currentTime = 0;
         video.play().catch(err => console.log('Video replay failed:', err));
@@ -127,7 +142,7 @@ const WaterIssuesSection: React.FC = () => {
     return () => {
       if (video) {
         video.pause();
-        video.removeEventListener('loadeddata', () => {});
+        video.removeEventListener('canplaythrough', () => {});
         video.removeEventListener('ended', () => {});
       }
     };
@@ -203,15 +218,17 @@ const WaterIssuesSection: React.FC = () => {
         {/* Video Overlay - increased opacity to make video less prominent */}
         <div className="absolute inset-0 bg-gray-900/90 z-10"></div>
         
-        {/* Water Droplet Video */}
+        {/* Water Droplet Video - Using image fallback for mobile */}
         <div className="absolute inset-0 w-full h-full overflow-hidden">
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559825481-12a05cc00344?ixlib=rb-1.2.1&auto=format&fit=crop&w=1000&q=80')] bg-cover bg-center md:hidden"></div>
           <video
             ref={videoRef}
-            className="absolute w-full h-full object-cover opacity-40"
+            className="absolute w-full h-full object-cover opacity-40 hidden md:block"
             muted
             playsInline
-            preload="auto"
+            preload="metadata"
             disablePictureInPicture
+            webkit-playsinline="true"
           >
             <source src="/more-water-drops.mp4" type="video/mp4" />
           </video>
